@@ -22,8 +22,9 @@ DEF_POLARSSL=-DUSE_POLARSSL
 DEF_OPENSSL=-DUSE_OPENSSL
 DEF_GNUTLS=-DUSE_GNUTLS
 DEF_=-DNO_CRYPTO
-REQ_GNUTLS=gnutls
+REQ_GNUTLS=gnutls,hogweed,nettle
 REQ_OPENSSL=libssl,libcrypto
+PUB_GNUTLS=-lgmp
 LIBZ=-lz
 LIBS_posix=
 LIBS_darwin=
@@ -35,8 +36,9 @@ PRIVATE_LIBS=$(LIBS_$(SYS))
 CRYPTO_LIB=$(LIB_$(CRYPTO)) $(PRIVATE_LIBS)
 CRYPTO_REQ=$(REQ_$(CRYPTO))
 CRYPTO_DEF=$(DEF_$(CRYPTO))
+PUBLIC_LIBS=$(PUB_$(CRYPTO))
 
-SO_VERSION=0
+SO_VERSION=1
 SOX_posix=so
 SOX_darwin=dylib
 SOX_mingw=dll
@@ -88,7 +90,7 @@ librtmp.a: $(OBJS)
 
 librtmp$(SO_EXT): $(OBJS)
 	$(CC) $(SO_LDFLAGS) $(LDFLAGS) -o $@ $^ $> $(CRYPTO_LIB)
-#	ln -sf $@ librtmp.$(SOX)
+	ln -sf $@ librtmp.$(SOX)
 
 log.o: log.c log.h Makefile
 rtmp.o: rtmp.c rtmp.h rtmp_sys.h handshake.h dh.h log.h amf.h Makefile
@@ -100,6 +102,7 @@ librtmp.pc: librtmp.pc.in Makefile
 	sed -e "s;@prefix@;$(prefix);" -e "s;@libdir@;$(libdir);" \
 		-e "s;@VERSION@;$(VERSION);" \
 		-e "s;@CRYPTO_REQ@;$(CRYPTO_REQ);" \
+		-e "s;@PUBLIC_LIBS@;$(PUBLIC_LIBS);" \
 		-e "s;@PRIVATE_LIBS@;$(PRIVATE_LIBS);" librtmp.pc.in > $@
 
 install:	install_base $(SO_INST)
@@ -109,7 +112,7 @@ install_base:	librtmp.a librtmp.pc
 	cp amf.h http.h log.h rtmp.h $(INCDIR)
 	cp librtmp.a $(LIBDIR)
 	cp librtmp.pc $(LIBDIR)/pkgconfig
-	cp ../doc/librtmp.3 $(MANDIR)/man3
+	cp librtmp.3 $(MANDIR)/man3
 
 install_so:	librtmp$(SO_EXT)
 	cp librtmp$(SO_EXT) $(SODIR)
