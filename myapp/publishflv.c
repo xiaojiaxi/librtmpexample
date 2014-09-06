@@ -42,7 +42,7 @@ int ReadTime(uint32_t *utime,FILE*fp);
 
 RTMP*rtmp=NULL;//rtmp应用指针
 RTMPPacket*packet=NULL;//rtmp包结构
-char* rtmpurl="rtmp://192.168.1.101:1935/live/test";//连接的URL
+char* rtmpurl="rtmp://192.168.1.100:1935/live/test";//连接的URL
 char* flvfilename="test.flv";//读取的flv文件
 
 
@@ -112,7 +112,7 @@ int main(){
 		uint32_t streamid=0;//流ID
 		uint32_t alldatalength=0;//该帧总长度
 	
-		if(((time(NULL)-start)<(perframetime/1000))&&bNextIsKey){	
+		if(((time(NULL)-start)<(perframetime/1000-1))&&bNextIsKey){	
 			//发的太快就等一下
 			if(perframetime>lasttime){
 				printf("TimeStamp:%8lu ms\n",perframetime);
