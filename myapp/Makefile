@@ -74,8 +74,8 @@ FORCE:
 $(LIBRTMP): FORCE
 	@cd ../librtmp; $(MAKE) all
 
-publishflv: publishflv.o
-	$(CC) $(LDFLAGS) -o $@$(EXT) $@.o $(LIBS) 
+publishflv: publishflv.o myflv.o
+	$(CC) $(LDFLAGS) -o $@$(EXT) $@.o myflv.o $(LIBS) 
 
 publishflv.o: publishflv.c $(INCRTMP) Makefile
-
+myflv.o: myflv.h Makefile

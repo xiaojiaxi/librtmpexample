@@ -3,13 +3,21 @@
 *.ko
 *.obj
 *.elf
-
+*.bsc
+*.sbr
+*.pch
+*.idb
+*.pdb
+*.opt
+*.ncb
+*.plg
+*.positions
 # Libraries
-*.lib
+#*.lib
 *.a
 
 # Shared objects (inc. Windows DLLs)
-*.dll
+#*.dll
 *.so
 *.so.*
 *.dylib
@@ -21,3 +29,4 @@
 *.i*86
 *.x86_64
 *.hex
+*.flv
