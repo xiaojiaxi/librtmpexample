@@ -34,6 +34,9 @@ void MYCLEAR();//清除相关
 int main(){
 	const char* rtmpurl="rtmp://192.168.1.100:1935/live/test";//连接的URL
 	const char* flvfilename="test.flv";//读取的flv文件
+	RTMP_LogLevel loglevel=RTMP_LOGINFO;//设置RTMP信息等级
+	RTMP_LogSetLevel(loglevel);//设置信息等级
+//	RTMP_LogSetOutput(FILE*fp);//设置信息输出文件
 	MYINIT();
 	PublishFlv(rtmpurl,flvfilename);
 	MYCLEAR();
@@ -43,7 +46,6 @@ int main(){
 void PublishFlv(const char*rtmpurl,const char*flvfilename){
 	RTMP*rtmp=NULL;//rtmp应用指针
 	RTMPPacket*packet=NULL;//rtmp包结构
-	RTMP_LogLevel loglevel=RTMP_LOGINFO;//设置RTMP信息等级
 
 	uint32_t start=0;
 	uint32_t lasttime=0;
@@ -58,9 +60,6 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 		goto end;
 	}
 	printf("duration:%u\n",myflv->duration);
-
-	RTMP_LogSetLevel(loglevel);//设置信息等级
-//	RTMP_LogSetOutput(FILE*fp);//设置信息输出文件
 
 	rtmp=RTMP_Alloc();//申请rtmp空间
 	RTMP_Init(rtmp);//初始化rtmp设置
@@ -92,11 +91,6 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 	myframe.bkeyframe=1;
 
 	while(TRUE){
-		uint32_t type=0;//类型
-		uint32_t datalength=0;//数据长度
-		uint32_t timestamp=0;//时间戳
-		uint32_t streamid=0;//流ID
-		uint32_t alldatalength=0;//该帧总长度
 		if(myflv->beof){
 			break;
 		}	
