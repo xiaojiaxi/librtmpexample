@@ -16,12 +16,7 @@
 
 #include "myflv.h"
 
-/*
-#ifdef WIN32
-#pragma comment(lib,"ws2_32.lib")
-#pragma comment(lib,"lib/librtmp.lib")
-#endif
-*/
+#define USE_RTMPPACKET 0
 
 //RTMP_XXX()返回0表示失败，1表示成功
 
@@ -45,8 +40,11 @@ int main(){
 
 void PublishFlv(const char*rtmpurl,const char*flvfilename){
 	RTMP*rtmp=NULL;//rtmp应用指针
+#if USE_RTMPPACKET
 	RTMPPacket*packet=NULL;//rtmp包结构
-
+#else
+    char* buffer=NULL;
+#endif
 	uint32_t start=0;
 	uint32_t lasttime=0;
 	uint32_t maxbuffsize=1024;
@@ -78,6 +76,7 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 		printf("ConnectStream Err\n");
 		goto end;
 	}
+#if USE_RTMPPACKET
 	packet=(RTMPPacket*)malloc(sizeof(RTMPPacket));//创建包
 	memset(packet,0,sizeof(RTMPPacket));	
 	RTMPPacket_Alloc(packet,maxbuffsize);//给packet分配数据空间
@@ -85,11 +84,12 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 	packet->m_hasAbsTimestamp = 0; //绝对时间戳
 	packet->m_nChannel = 0x04; //通道
 	packet->m_nInfoField2 = rtmp->m_stream_id;
-
+#else
+	buffer=calloc(1,maxbuffsize);
+#endif
 ////////////////////////////////////////发送数据//////////////////////
 	start=time(NULL)-1;
 	myframe.bkeyframe=1;
-
 	while(TRUE){
 		if(myflv->beof){
 			break;
@@ -107,7 +107,7 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 #endif
 			continue;
 		}	
-
+#if USE_RTMPPACKET
 		myframe=MyFlvGetFrameInfo(myflv,packet->m_body,maxbuffsize);
 		if(myframe.breadbuf==0){
 			if(maxbuffsize<myframe.datalength){
@@ -125,8 +125,7 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 				maxbuffsize<myframe.datalength,	maxbuffsize,myframe.datalength);
 				goto end;
 			}
-		}		
-//		printf("Type:%u DateLength:%u Timestamp:%u\n",myframe.type,myframe.datalength,myframe.timestamp);		
+		}				
 		if(myframe.type==0x08||myframe.type==0x09){
 			packet->m_nTimeStamp = myframe.timestamp; 
 			packet->m_packetType=myframe.type;
@@ -140,7 +139,28 @@ void PublishFlv(const char*rtmpurl,const char*flvfilename){
 				break;
 			}
 		}
-
+#else
+		myframe=MyFlvGetFrameInfo(myflv,NULL,0);
+		if(maxbuffsize<myframe.alldatalength){
+			printf("ChangeMaxBuffSize %u->%u\n",maxbuffsize,myframe.alldatalength);
+			maxbuffsize=myframe.alldatalength;
+			buffer=calloc(1,maxbuffsize);
+		}
+		fread(buffer,1,myframe.alldatalength,myflv->fp);
+		if(myframe.type==0x08||myframe.type==0x09){
+			if (!RTMP_IsConnected(rtmp)){
+				printf("rtmp is not connect\n");
+				break;
+			}
+			if (!RTMP_Write(rtmp,buffer,myframe.alldatalength)){
+				printf("Send Err\n");
+				break;
+			}
+		}
+		if(ftell(myflv->fp)>=myflv->totalsize){
+			break;
+		}
+#endif
 		myframe=MyFlvGetFrameInfo(myflv,NULL,0);		
 	}
 	printf("\nSend Data Over\n");
@@ -150,11 +170,18 @@ end:
 		RTMP_Free(rtmp);//释放内存
 		rtmp=NULL;
 	}
+#if USE_RTMPPACKET
 	if(packet!=NULL){
 		RTMPPacket_Free(packet);//释放内存
 		free(packet);
 		packet=NULL;
 	}
+#else
+	if(buffer){
+		free(buffer);
+		buffer=NULL;
+	}
+#endif
 	myflv=MyFlvClose(myflv);
 }
 

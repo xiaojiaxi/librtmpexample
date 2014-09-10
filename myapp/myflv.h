@@ -25,6 +25,13 @@ int ReadU32(uint32_t *u32,FILE*fp);
 int PeekU8(uint32_t *u8,FILE*fp);
 int ReadUTime(uint32_t *utime,FILE*fp);
 
+
+int WriteU8(uint32_t u8,FILE*fp);
+int WriteU16(uint32_t u16,FILE*fp);
+int WriteU24(uint32_t u24,FILE*fp);
+int WriteU32(uint32_t u32,FILE*fp);
+int WriteUTime(uint32_t utime,FILE*fp);
+
 typedef struct _MyFrame{
 uint32_t type;//类型，1字节0x08音频0x09视频
 uint32_t datalength;//数据长度，3字节
@@ -58,5 +65,10 @@ MyFLV*MyFlvOpen(const char*filename);
 //buf不为空并且len足够，返回数据并跳到下一帧
 //否则还在当前帧
 MyFrame MyFlvGetFrameInfo(MyFLV*myflv,char*buf,uint32_t len);
+
+
+MyFLV*MyFlvCreate(const char*filename);
+int MyFlvWriteFrame(MyFLV*myflv,MyFrame myframe,char*buf,uint32_t len);
+
 MyFLV*MyFlvClose(MyFLV*myflv);
 #endif

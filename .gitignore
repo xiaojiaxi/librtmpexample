@@ -12,6 +12,7 @@
 *.ncb
 *.plg
 *.positions
+*.ilk
 # Libraries
 #*.lib
 *.a

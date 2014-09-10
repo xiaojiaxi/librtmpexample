@@ -11,6 +11,8 @@
 #define RTMPDUMP_VERSION "v2.4"
 #endif 
 
+#define USE_MYFLV 1
+
 #include "librtmp/rtmp_sys.h"
 #include "librtmp/log.h"
 
@@ -40,8 +42,16 @@ void PlayFlv(const char*rtmpurl,const char*flvfilename,int bLive){
 	char*buff=(char*)malloc(buffsize);
 	double duration=-1;
 	int nRead=0;
-	FILE*fp=fopen(flvfilename,"wb");
 	long 	countbuffsize=0;
+#if USE_MYFLV
+	MyFLV*myflv=MyFlvCreate(flvfilename);
+	if(myflv==NULL)
+		return ;
+#else
+	FILE*fp=fopen(flvfilename,"wb");
+	if(fp==NULL)
+		return ;
+#endif
 	rtmp=RTMP_Alloc();//申请rtmp空间
 	RTMP_Init(rtmp);//初始化rtmp设置
 	rtmp->Link.timeout=25;//超时设置
@@ -61,13 +71,22 @@ void PlayFlv(const char*rtmpurl,const char*flvfilename,int bLive){
 		printf("Connect stream Err\n");
 		goto end;
 	}
-#if 1
+#if USE_MYFLV
 	packet=(RTMPPacket*)malloc(sizeof(RTMPPacket));//创建包
 	memset(packet,0,sizeof(RTMPPacket));	
 	RTMPPacket_Reset(packet);//重置packet状态
 	while (RTMP_GetNextMediaPacket(rtmp,packet)){
-		if(packet->m_packetType==0x09&&packet->m_body[0]==0x17)
+		if(packet->m_packetType==0x09&&packet->m_body[0]==0x17){
 			printf("TimeStamp:%u\n",packet->m_nTimeStamp);
+		}	
+		if(packet->m_packetType==0x09||packet->m_packetType==0x08){
+			MyFrame myframe={0};
+			myframe.type=packet->m_packetType;
+			myframe.datalength=packet->m_nBodySize;
+			myframe.timestamp=packet->m_nTimeStamp;
+			MyFlvWriteFrame(myflv,myframe,packet->m_body,packet->m_nBodySize);
+
+		}
 		RTMPPacket_Free(packet);
 		RTMPPacket_Reset(packet);//重置packet状态
 	}
@@ -76,14 +95,20 @@ void PlayFlv(const char*rtmpurl,const char*flvfilename,int bLive){
 	while(nRead=RTMP_Read(rtmp,buff,buffsize)){
 		fwrite(buff,1,nRead,fp);
 		countbuffsize+=nRead;
-		printf("DownLand...:%0.2fkB",countbuffsize*1.0/1024);
+		if(buff[0]==0x09&&buff[11]==0x17){
+			printf("DownLand...:%0.2fkB\n",countbuffsize*1.0/1024);
+		}
 	}
 #endif
 end:
+#if USE_MYFLV
+	myflv=MyFlvClose(myflv);
+#else
 	if(fp){
 		fclose(fp);
 		fp=NULL;
 	}
+#endif
 	if(buff){
 		free(buff);
 		buff=NULL;
